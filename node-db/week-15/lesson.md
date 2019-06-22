@@ -25,13 +25,6 @@ When you are working with frameworks it is always helpful to use their documenta
 * [Express Documentation](https://expressjs.com)
 * [Node.js Documentation](https://nodejs.org/api/http.html)
 
-### Middleware
-
-Middleware allow us to process requests to add functionalities that are not built in to Express, for example logging, authentication, etc.
-
-> * Express Documentation: [Using Middleware](https://expressjs.com/en/guide/using-middleware.html)
-> * Video: [body-parser](https://www.youtube.com/watch?v=vKlybue_yMQ) which makes it easier to work with POST requests and forms.
-
 ### Routing
 
 Routing refers to how an application’s endpoints (URIs) respond to the client requests. These are configured differently for each framework, and can range from basic configuration to very extensive for more complex use cases.

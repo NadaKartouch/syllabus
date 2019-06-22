@@ -5,11 +5,15 @@
 What we did last lesson:
 
 * Why we need databases
+* Why NoSQL why SQL?
 * Installing SQLite
 * Creating a database with SQL and storing data in it.
 * Inserting data into a database using SQL.
 * Retrieving data from a database using SQL.
 * Escaping (who figured out how to insert my real name into the database?)
+* Primary keys
+* Escaping (dealing with awkward people with the surname O'Connor)
+* How to run SQLite *with node* on your machine - setting up a development environment.
 
 Homework from last lesson:
 
@@ -23,6 +27,7 @@ Homework from last lesson:
 
 **What we will learn today?**
 
+- Why NoSQL why SQL?
 - Checking out a project and adding hotel.sql to the repo
 - How to run SQLite *with node* on your machine - setting up a development environment.
 - How to run a database query that retrieves tabular data in node express to an endpoint.
@@ -30,26 +35,67 @@ Homework from last lesson:
 - Updating data from an endpoint.
 - Dealing with unclear user stories. There is a TRAP in one of these user stories we will be giving you today.
 - What is the difference between user story, use case and user acceptance test. 
+- How to run a database query that retrieves tabular data in node express and returns it to an endpoint.
+- Inserting data into a database from an endpoint.
+- Updating data in a database from an endpoint.
+- Dealing with unclear user stories. There is a trap in one of these user stories we will be giving you today.
+- What is the difference between user story, use case and user acceptance test.
+
+
+
+### SHOULD I USE SQL OR SHOULD I USE NOSQL?
+
+Short answer: if in doubt, you should just use SQL. Always.
+
+Long answer: There are two forms of NoSQL.
+
+1) Extremely high scale -- Cassandra --- constraints are not enforced due to high load and high levels of data.
+
+2) For beginner programmers - Mongo --- constraints (among other features) are not there to simplify things for beginners.
+
+
+This lesson will primarily be about taking what you have stored in a *flat file*, and changing it such that it is stored in a database instead. This will be done to appease Marriott hotel manager grumpy cat. With all the constraints you have already added to the database, on your `hotel.sql` file, the application should be much safer now - if you screw up (and you will, because bugs are as inevitable as taxes), you can *see* the bugs getting deployed before they start affecting guests.
+
+Use `/server/class2.js` for the exercises of this class.
+
+
+
+This lesson will primarily be about taking what you have stored in a *flat file*, and changing it such that it is stored in a database instead. This will be done to appease Big chain hotel manager grumpy cat - e.g. so that all invoices come attached to reservations. With all the constraints you have already added to the database, on your `hotel.sql` file, the application should be much safer now - if you screw up (and you will, because bugs are as inevitable as taxes), you can *see* the bugs getting deployed before they start screwing up your valuable data.
+
+Use `/server/class2.js` for the exercises of this class.
+
 
 ### Setting up the environment
+### LESSON 1: SELECT ALL THE THINGS!
 
 **Task** Clone the [repo](ADD THE LINK !!!), and follow the instructions to set the environment up.
+**User Story:** As a staff member, I want to be able to view a list of customers so that I can see who has visited our hotel.
 
 You have already worked with back end servers using Express. This is just another yet another one, that we will be connecting to a database.
+**Use case** When a user does a GET request to /customers it should return customer titles, first names, surnames.
 
 In order for us to interact with the server, we are going to use [Postman](https://www.getpostman.com/), which will accurately mimic API calls made from react. In the last three lessons you're going to make react do to this back end what postman is going to do today.
+**User acceptance test**: Do a GET request and get back [{"title": "mr", "firstname": "Donald", "surname": "Trump"}, {"title": "Mrs", "firstname": "Hillary", "surname": "Clinton"}]
 
 We're going to use it for debugging. Can anybody tell me what debugging is?
+1) Grab the cyf-hotel-db.
 
 ![Debugging](debugging.jpg "Debugging")
+2) Change the branch to class2.
 
 ![postman-get-1](client-postman-server.jpg)
+3) Run "npm i" and then "npm start".
 
 **Task** Download and install [Postman](https://www.getpostman.com/).
+4) Use your browser to look at http://localhost:8080/api/customers/.
 
 Now let us all try Postman by GETting from `http://localhost:8080/api/customers`, as is shown next.
+You should get back:
 
 ![postman-get-1](postman-get-1.png)
+```javascript
+{"customers":[{"ID":1,"title":"Mr","first_name":"Laurie","surname":"Ainley","email":"laurie@ainley.com"}]}
+```
 
 
 ### LESSON 1: SELECT ALL THE THINGS!
@@ -62,24 +108,14 @@ Now let us all try Postman by GETting from `http://localhost:8080/api/customers`
 
 Remove the code that is returning a JSON object on end point `/customers`, and use what you have learned about to SQL to fill in the query that fetches all the customers from the database.
 
-You will need to install a package to deal with sqlite `npm install --save sqlite3` then add this code before the routes in `class2.js`
-
-```javascript
-// Add these lines before the routes definition
-const filename = './database/database.sqlite'
-const knex = require('knex')({
-  client: 'sqlite3',
-  connection: {
-    filename
-  }
-})
-```
-
 - select everything
 
 ```javascript
+const filename = './database/database.sqlite';
+const sqlite3    = require('sqlite3').verbose();
+let db = new sqlite3.Database(filename);
 
-// This is the route we will need to update
+
 router.get('/customers', function(req, res) {
   res.status(200).json({
     customers: [{
@@ -98,15 +134,34 @@ Who can tell me what this is currently doing? What do we need to make it do?
 So, the answer is here:
 
 ```javascript
-const sqlStatement = 'select * from customers';
-knex.raw(sqlStatement).then(function (data) {
-  res.json(data);
+router.get('/customers', function(req, res) {
+  res.status(200).json({
+    db.all(sql, [], (err, 'select * from customers' ) => {
+      res.status(200).json({
+        customers: rows
+      });
+    });
+  });
+router.get('/customers', function(req, res) {
+ var sql = 'select * from customers';
+
+ db.all(sql, [], (err, rows) => {
+   if (err) {
+       console.log('ERROR fetching from the database:', err);
+       return;
+   }
+   console.log('Request succeeded, new data fetched', rows);
+   res.status(200).json({
+     customers: rows
+   });
+ });
 });
 ```
 
-This is [the library](https://knexjs.org/) we will use for building queries. `Knex` provides helpers for creating queries so we normally won't use `knex.raw` in real applications, but we will use it today to practice SQL more, and write "raw" SQL statements.
-
 ### Exercise 1
+### EXERCISE 1
+
+
 
 **User Story:** As a staff member I need to check the details of a given customer given its id.
 
@@ -116,25 +171,31 @@ This is [the library](https://knexjs.org/) we will use for building queries. `Kn
 - hint: simple select and filter by ID
 
 STRETCH GOAL (OPTIONAL) : If you get a request of /customers/notanumber (anything that isn't a number) it should return an HTTP 400 bad request.
+OPTIONAL STRETCH GOAL : If you get a request of /customers/notanumber (anything that isn't a number) it should return an HTTP 400 bad request.
 
 
 ### LESSON 2 : LIKE, WHATEVER
 
 So, now we're going to deal with one of the most common issues with hotel databases: the guest's name being misspelled.
+We're going to deal with one of the most common issues with hotel databases: the guest's name being misspelled.
 
 So, "Hilary Clinten" is added to the database. She calls up on the phone asking about her reservation and spells her name correctly on the phone. The hotel staff knows what *some of her name* sounds like but not all of it and they want to find her as a customer on the system.
+So, "Hilary Clinten" is added to the database by booking agent #1. She calls up on the phone asking about her reservation and booking agent #2 spells her name correctly on the phone. The hotel staff knows what *some of her name* sounds like but not all of it and they want to find her as a customer on the system.
 
 For this problem where we want to search in *part* of a string we use the LIKE command:
+For this problem where we want to search for rows where a column matches *part* of a string we use the LIKE command:
 
 ```sql
 select * from customers where surname like '%lint%';
 ```
 
 This returns all of the customers who have the name 'lint' in their names.
+It will search the `surname` string on each row for the substring `lint`, and return true for the ones where it is part of the string. The substring is matched *case insensitively* with the actual data - meaning that it makes no difference if the stored value is upper case and the provided substring is lower case (note that other databases like MySQL / Postgres are not case insensitive with LIKE).
 
 ```sql
 select * from customers where surname like '%clint%';
 ```
+The `%` sign before and after `lint` indicates that we could have any character, and any number of characters before and after that substring.
 
 This won't return anything at all. Why not?
 
@@ -144,9 +205,10 @@ select * from customers where surname ilike '%clint%';
 
 This will. Why?
 
-### EXERCISE 2A
+### EXERCISE 2
 
 **User Story:** As a staff member I want to search for a customer through its `surname`, but we don't know that it might be misspelled.
+**User Story:** As a staff member I want to search for a customer through their `surname`, but we don't know that it might be misspelled.
 
 **User Acceptance test**: Complete the end-point `/customers/:surname`, so that it extracts that customer information from the database, and replies back with that information as JSON.
 
@@ -154,18 +216,48 @@ This will. Why?
 
 ### EXERCISE 3
 
+For this exercise, we will need to use postman to do an HTTP POST and send some JSON:
+
+* Can somebody tell me what an HTTP POST is? How is it different from an HTTP GET?
+
+* Can somebody tell me what JSON is?
+
+<p align="center">
+  <img src="postman-post-1.png" display="block" width="85%"/>
+</p>
+
+To do this, we must:
+
+* Click on "headers" you will need to add the header `Content-Type` to `application/json` - this is telling the server that we're going to send some JSON.
+
+* You will also need to click the drop down and change GET to POST - we are no longer GETting data we are POSTing data.
+
+
 **User Story:** As a guest, I want to register my details in the system so that I can check availability for my stay.
 
 **User Acceptance test**: Take the data being POSTed to the `/customers` endpoint check it is inserted into the database.
+**User Acceptance test**: Take this data being POSTed to the `/customers` endpoint check it is inserted into the database:
+
+  {
+    title: 'Mr',
+    firstname: 'Laurie',
+    surname: 'Ainley',
+    email: 'laurie@ainley.com'
+  }
 
 STRETCH GOAL (OPTIONAL): If a bad request is made to customers - first name is missing, for instance, return an HTTP 400 Bad reqest.
 
 
 ### HOMEWORK 4
+### EXERCISE 4
+
 **Notes on Postman**
 
 In the next image you can see Postman doing a POST request. Highlighed areas indicate the fields that need to be changed and/or information that needs to be added. The arrow points to a tab where you will need to set the type of content of this request. As denoted by the arrow legend, you will need to set `Content-Type` to `application/json`.
 ![postman-get-1](postman-post-1.png)
+In this case we want Postman to do a PUT request. Again, highlighed areas indicate the fields that need to be changed and/or information that needs to be added. The arrow points to a tab where you will need to set the type of content of this request. As denoted by the arrow legend, you will need to set `Content-Type` to `application/json`.
+![postman-put-1](postman-put-1.png)
+
 
 **User Story:** As a guest, I noticed that there is a typo on my details and wish to correct it.
 
@@ -173,9 +265,11 @@ In the next image you can see Postman doing a POST request. Highlighed areas ind
 
 **User acceptance test**: PUT title=mr, firstname=donald, surname=trump on /customers/:id and check that the database was updated.
 
+Hints:
 
 
 - update table
+- UPDATE table
 - remember your previous lesson
 - hint: in the javascript code, instead of db.all() you will need ... what?
 
@@ -183,22 +277,54 @@ In the next image you can see Postman doing a POST request. Highlighed areas ind
 ### HOMEWORK 4 : STRETCH GOAL (OPTIONAL)
 
 The end point should properly detect which customer properties are being updated, and generate the appropriate SQL update statement.
+### LESSON 3: IN IT
 
+Now let's say that you want to see all of the customers who have the surname O'Connor or Trump.
 
 ### HOMEWORK 5
+The way we've learned so far (note the quotation marks):
 
 **User Story:** As a staff member, I want to create a new reservation.
+```sql
+select * from customers where surname = "O'Connor" or surname = 'Trump'
+```
 
 Create and end-point to post a new reservation to `/reservations/`.
+You can also do it like so:
 
 - insert into
 - create the endpoint from scratch
 - which HTTP method should you use?
+```sql
+select * from customers where surname in ("O'Connor", 'Trump')
+```
 
 STRETCH GOAL (OPTIONAL) : Return {"status": "error": "reason": "reason..."} if *anything* was wrong with the request.
+This is might seem like a minor difference but:
 
+- It is useful when you want your code to pass a list of things to the database and get a query which matches one or more of them.
 
 ### LESSON 6 : I WISH I COULD DELETE HIM IN REAL LIFE
+- You can put *a whole select statement* in there if it returns one column. Your homework will require this.
+
+
+##### EXERCISE 3.a
+
+Write a query to get all of the customers with the first name "Colm" or "Hillary" using *IN*.
+
+
+##### EXERCISE 3.b: OPTIONAL STRETCH GOAL
+
+We're trying to locate a reservation for a customer. We know that:
+
+- Their checkin date may have been June 1st, 2017 OR July 1st 2017
+- Their checkout date may have been June 30th, 2017 OR July 30th 2017
+
+Write a query using *IN* that is guaranteed to return their reservation.
+
+N.B. Remember 01/01/2017? Remember to put the date in an *unambiguous format*.
+
+### LESSON 5 : I WISH I COULD DELETE HIM IN REAL LIFE
 
 We've currently done inserting data and updating data, but sometimes inserting data was just a mistake
 and it needs to go.
@@ -207,6 +333,7 @@ It's a fairly simple command that looks like select, you just specify the table 
 
 ```sql
 delete from customers where surname ilike '%trump%';
+delete from customers where surname like '%trump%';
 ```
 
 There are several things you need to worry about when you delete data and what you do about them will depend entirely upon what it is you are trying to do:
@@ -221,6 +348,7 @@ There are several things you need to worry about when you delete data and what y
 - Often it's a good idea to give data the 'status' deleted instead of actually deleting it.
 
 ### HOMEWORK 6
+### Exercise 5.a
 **User Story:** As a staff member, I want to delete a canceled reservation from the database.
 
 
@@ -232,8 +360,30 @@ Create an end-point to delete a given reservation from `/reservation/:id/`.
 
 - delete
 
+## Homework
 
 ### HOMEWORK 7
+### HOMEWORK 1
+
+Consider again the scenario of exercise 4.
+
+Change the code so that the end point detects which customer properties are being updated, and generate the appropriate SQL update statement - so that only those properties are updated, as opposed to the whole row.
+
+
+### HOMEWORK 2
+
+**User Story:** As a staff member, I want to create a new reservation.
+
+Create and end-point to post a new reservation to `/reservations/`.
+
+- insert into
+- create the endpoint from scratch
+- which HTTP method should you use?
+
+STRETCH GOAL (OPTIONAL) : Return {"status": "error": "reason": "reason..."} if *anything* was wrong with the request.
+
+
+### HOMEWORK 3
 **User Story:** As a staff member, I want to get a list of all the existing reservations.
 
 Create an end-point to get from `/reservations` all existing reservations.
@@ -242,27 +392,33 @@ Create an end-point to get from `/reservations` all existing reservations.
 
 
 ### HOMEWORK 8
+### HOMEWORK 4
 **User Story:** As a customer, I want to check the details of a reservation.
 
 Create and end-point to get from `/reservations/:id` the details of a resrevation through its `id`.
 
 - simple filtering
 - create the enpoint from scratch
+- create the endpoint from scratch
 
 
 ### HOMEWORK 9
+### HOMEWORK 5
 **User Story:** As a staff member, I want to get a list of all the reservations that start at a given date.
 
 Create and end-point to get from `/reservations/starting-on/:startDate` all the reservations that start at a given date.
 
 - simple filtering
 - create the enpoint from scratch
+- create the endpoint from scratch
 
 
 ### HOMEWORK 10
+### HOMEWORK 6
 **User Story:** As a staff member, i want to get a list of all the reservations that are active at a given date.
 
 Create and end-point to get from `/reservations/active-on/:date` all the reservations that are active on a given date - some customer has a room reserved on that day.
 
 - multiple filtering.
 - create the enpoint from scratch
+- create the endpoint from scratch

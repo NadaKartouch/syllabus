@@ -1,226 +1,469 @@
 # LESSON 3: DATA INTEGRITY AND ANALYTICS
 
+**Recap of last lesson**
+
+- What is the difference between user story, use case and user acceptance test.
+- How to run a database query that retrieves tabular data in node express to an endpoint.
+- Inserting data from an endpoint using postman.
+- Updating data from an endpoint using postman.
+- Using 'IN'
+- Deleting data
+
+
 **What we will learn today?**
 
-* How to add invalid relational data to a database
-* How to prevent invalid relational data with foreign keys
-* Database nulls
-* Predicates
-* Combining SQL predicates with AND and OR
-* SQL - Order by
-* SQL - Count / Sum / Avg
-* SQL - Group by
-* SQL - HAVING
-* SQL - LIMIT
-* SQL - like
-* SQL - DISTINCT
-* SQL - 'IN'
+* Joins
+* SQL Injection
+* LIMIT
+* DISTINCT
+* SUM / AVG / COUNT
+* GROUP BY
+* HAVING
 
 
-### LESSON 7 : JOIN ME, AND TOGETHER WE CAN RULE THE INTERNET AS FATHER AND SON!
+### LESSON 1: JOIN ME, AND TOGETHER WE CAN RULE THE GALAXY AS FATHER AND SON!
+
+So far, we've put data in tables and kept references to each of them using IDs, but
+we've not yet learned how to link them automatically.
+
+We don't know how to get the *name* of a customer from a reservation - only their ID.
 
 Now let's say we want to get the *names* of customers who have a reservation *today*.
 
 From what we know now, we *could* do it like this:
 
-- select customer_id from reservations where date_started = '01/01/2018'
-- write down the list of customer ids on paper (e.g. 3, 5, 7)
-- select * from customers where id = 3 or id = 5 or id = 7
+- `SELECT customer_id FROM reservations WHERE check_in_date = '2018/08/19';`
+- write down the list of customer IDs on paper (e.g. 3, 5, 7)
+- `SELECT * FROM customers WHERE id IN (3, 5, 7);`
 
-However, that's stupid. We want the computer to figure that out. That's where a database "join" comes in handy. In real life, if you work with databases, you will be using this thing *all* of the time.
+However, we want the computer to figure out that we want IDs 3, 5 and 7 by itself.
 
-Now, we have data that spans two tables - we have reservations with a "customer_id" column that refers to the id column in the "customers" table.
+This is what a database "JOIN" is. In real life, if you work with databases, you will be using this thing *all* of the time - relationships between data are vitally important.
 
-```
-SELECT reservations.date_started, customers.firstname, customers.surname
-from reservations join customers on reservations.customer_id = customer.id
-where reservation.date_started = '01/01/2018';
-```
+Now, we have data that spans two tables - we have reservations with a "customer_id" column that refers to the ID column in the "customers" table.
 
-### EXERCISE 7
-**User Story:** As a staff member, I want to get the list of all the invoices, and the details of the referring reservations.
-
-Create and endpoint `/detailed-invoices` from where we can get the list of invoices, together with the details for the reservation that they refer to.
-
-- join
-
-
-### EXERCISE 8
-**User Story:** As a staff member, I want to consult reservations, but including the room and customer information.
-
-Update the exercies 5.* to retreieve the information of the rooms and customers as well.
-
-
-### EXERCISE 8: STRETCH GOAL
-
-**User story:** As a staff member, I want ot retrieve the reservations and details for rooms and customers, that happened between a given date range.
-
-Create and endpoint to get from `/reservations/details-between/:from_day/:to_day` all the reservations and details about customer and room, between a given date range.
-
-
-
->>> sqlite temp.sqlite
-
-sqlite> create table rooms (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  type_name varchar(50),
-  original_price integer,
-  current_price int,
-);
-
-sqlite> insert into rooms (1, 'seaview', 50.0, 55.0);
-
->>> sqlite temp.sqlite < example.sql
-
-
-# EXERCISE 1: Recreate the hotel database and add some entries
-
-* Recreate customer, room and reservation tables
-* Insert some example data making sure that the IDs match
-
-
-# LESSON 2: Data integrity
-
-Try this in your database:
-
-INSERT INTO Invoices (reservation_id, total, surcharges, invoice_date_time, paid) values (9999, 35.0, 0, '01/01/2018', 0);
-
-# QUESTIONS FOR CLASS:
-
-* What's the problem with the above SQL statement?
-
-* What happens to the application and the end user if you accidentally do this?
-
-* How can you deal with a problem like this? There are 2/3 answers to this question - what are they?
-
-A1: Delete data
-
-A2: Make it impossible to add invalid data in the first place in the code.
-
-A3: Make it impossible to add invalid data in the first place in the database.
-
-# LESSON: Deleting records from a table
-
-To fix the invalid data we can first delete the data from the database. This is as
-good a time as any to tell you about deleting, so here goes:
-
-  DELETE FROM [ TABLE ] WHERE id = [ ID ];
-
-# EXERCISE: First find the row with select, then delete it
-
-Start with the `SELECT`:
-
-```
-SELECT * FROM customers WHERE <...>
+```sql
+SELECT reservations.check_in_date, customers.first_name, customers.surname
+FROM reservations JOIN customers ON reservations.customer_id = customers.id
+WHERE reservations.check_in_date = '2018/08/19';
 ```
 
-Then the delete.
+Note that:
+
+- Because we are selecting columns from two tables and need to distinguish them, we use "table.column" syntax.
+- We explicitly link reservations.customer_id and customers.id *even if they have a foreign key relationship*.
+- reservations.customer_id and customers.id don't actually *have* to have a foreign key relationship, but they should.
+
+Let's try the query.
+
+First, go to the `cyf-hotel-db` repo in your terminal and switch to the `class3` branch. Next, run `npm i` and `npm start` to start the server. Then, open a new terminal tab in the `cyf-hotel-db` directory and run `sqlite3 database/database.sqlite` to open SQLite.
+
+Now, copy and paste the above `SELECT` query into SQLite. You should get this:
+
 ```
-DELETE FROM customers WHERE <...>
+2018/08/19|Marie|Niki
+2018/08/19|Anna|Kolen
 ```
 
 
-### LESSON : Foreign Keys
+##### EXERCISE 1.a
 
-Ex
+Get the list of all room IDs together with their room type names.
 
-CREATE TABLE customers (
-    id        INTEGER       PRIMARY KEY AUTOINCREMENT,
-    title     VARCHAR(10),
-    firstname VARCHAR (50),
-    surname   VARCHAR (50),
-    email     VARCHAR (255) 
-);
+##### EXERCISE 1.b: OPTIONAL STRETCH GOAL
+
+Get the list of reservations (all columns) together with the the title, first name and surname customer who made it.
 
 
-CREATE TABLE reservations (
-  ID INTEGER PRIMARY KEY AUTOINCREMENT,
-  customer_id INTEGER,
-  room_id INTEGER,
-  check_in_date DATETIME NOT NULL,
-  checkout_out_date DATETIME,
-  room_price_per_night REAL,
-  FOREIGN KEY (customer_id) REFERENCES customers(id)
-);
 
-Now, try running this again:
+### LESSON 2: SQL INJECTION
 
-INSERT INTO reservations (9999, 35, '01/01/2018', '01/01/2018', invoice_date_time, paid) values (9999, 35.0, 0, '01/01/2018', 0);
+So, our hotel has a shady new guest. Let's say that we have a react frontend on top which uses the
+APIs we're building - users won't use the APIs directly but they can just fire up postman and use them
+if they want.
 
-A foreign key is a *constraint*.
+This is very common - lots of websites have a single page application that uses an API underneath just like the one
+we're building.
 
-### EXERCISE: Add foreign key for invoices
-
-
-#### Deal with imcomplete data - foreign keys
-
-- Add reservations without either costumer or room
-- Try to get the information for given reservation
-  - things should break because there is missing data on the reservation
-- Fix the table with the foreign keys
-
-Alter the table to have contrains on the room and customer ids..
+Now, this guest does a little poking around and he realizes that he can delete his reservation.
 
 ```
-ALTER TABLE Reservation (for room)
+DELETE http://localhost:8080/api/reservations/6
 ```
 
-#### Deal with incomplete data - not null
-Use checkin date as an example
-
-- Add reservations with no check-in date
-- Bring up the scenario where the client comes up to the hotel and the reservation is missing the checking date, so the room is being used, because another customer extended the stay.
-- Fix table with NOT NULL on all the required columns
+Now, open a new terminal window and run "sqlite3 databases/database.sqlite":
 
 ```
-ALTER TABLE Reservation (for room)
+sqlite> SELECT * FROM reservations;
 ```
 
-### Go over analysis through querying
+The reservation with ID 6 should be deleted - as you coded it to work.
 
-- get all the reservations we have
+This is fine, but not very interesting. However, let's experiment - try doing *this* with your reservation API:
 
-- get all the reservations we have for room with number 3 - `where`
+```
+DELETE http://localhost:8080/api/reservations/6%20or%201%3D1
+```
 
-- get all the reservations we have by date - `order by`
+And run this again:
 
-- number of reservations for room number 3 - `count`
+```
+sqlite> SELECT * FROM reservations;
+```
 
-- number of reservations per room number - `group by`
+And voila, he's just emptied out the entire hotel. Nobody has a reservation any more!
 
-- rooms that have more than 10 reservations - `having`
+![Hackerman](hackerman.jpg "Hackerman")
 
-- 3 most reserver rooms on the database - `limit`
+##### EXERCISE 2.a
 
-- search for onn wich is probably misspelled - `like` '%onn%'
+You have five minutes. Work in teams. Figure out what happened between you and *why*.
 
-- list dates we have check-ins on - `distinct`
-
-- clients with surnames in [`O\'Connor`, `Silva`] - `in`
-
-- list reservations for clients with surnames in [`O\'Connor`, `Silva`] - joining in addition to what we already have
-
-- list all reservations for non deluxe rooms - `!= 2`
-
-- number of reservations for room number 3 on the summer of 2017 - `date >= '21-06-2017' and date < '21-09-2017'`
-
-- list reservations for clients with surnames not like [`O\'Connor`, `Silva`] - `NOT in`
-
-- number of reservations for room number 3 on the summer and winter of 2017 - `date >= '21-06-2017' and date < '21-09-2017' or date >= '21-12-2017' and date < '21-04-2018'`
-
-# Notes for next steps
-- `<`, `>`, `>=`, `<=` ---- what are all the reservations after tomorrow?
-
-- combining predicates (`AND`, `OR`, `NOT`)
-- `ORDER BY`
-- `LIMIT`
-- add `LIKE`
-- include `DISTINCT`
-- `GROUP BY`, `HAVING`
-- `COUNT(*)`, `SUM`, `AVG`, `MIN`, `MAX`
-- `IN`
+Clue : You might want to use this https://meyerweb.com/eric/tools/dencoder/
 
 
-- sub-selects
-- `!=`
-- `IS NULL`
+### LESSON 3: ORDER BY SOMETHING
+
+QUESTION FOR CLASS : What the difference is between *random* and *arbitrary*?
+
+Up until now we've not been returning results in a *random* order, but we have been returning
+them in an *arbitrary* order. The database has chosen what order to return records in. It's
+generally the order you put them in but there is *no* guarantee it will be in that order.
+
+Using 'order by' we can get records back in a specified order:
+
+```sql
+SELECT reservations.check_in_date, customers.first_name, customers.surname
+FROM reservations JOIN customers ON reservations.customer_id = customers.id
+WHERE reservations.check_in_date = '2018/08/19' ORDER BY customers.surname;
+```
+
+This will give the output in a new order:
+
+```
+2018/08/19|Anna|Kolen
+2018/08/19|Marie|Niki
+```
+
+We have Mrs Clinton, Mr Trump and Mr Hackerman staying at the hotel. What order will the reservations be displayed in?
+
+If we want to get *explicitly* the three of them in ascending order:
+
+```sql
+SELECT reservations.check_in_date, customers.first_name, customers.surname
+FROM reservations JOIN customers ON reservations.customer_id = customers.id
+WHERE reservations.check_in_date = '2018/08/19' ORDER BY customers.surname ASC;
+```
+
+Now, if we want them in descending order:
+
+```sql
+SELECT reservations.check_in_date, customers.first_name, customers.surname
+FROM reservations JOIN customers ON reservations.customer_id = customers.id
+WHERE reservations.check_in_date = '2018/08/19' ORDER BY customers.surname DESC;
+```
+
+```
+Check In Date  First Name  Surname
+------------------------------------
+2018/08/19     Melania     Trump
+2018/08/19     Donald      Trump
+2018/08/19     Colm        Hackerman
+2018/08/19     Bill        Clinton
+2018/08/19     Hillary     Clinton
+```
+
+This is just one way the results could come out. They could also come out (e.g. on a different computer, or done at a different time), for instance, like this:
+
+```
+Check In Date  First Name  Surname
+------------------------------------
+2018/08/19     Donald      Trump
+2018/08/19     Melania     Trump
+2018/08/19     Colm        Hackerman
+2018/08/19     Hillary     Clinton
+2018/08/19     Bill        Clinton
+```
+
+Note that Donald and Melania and Bill and Hillary are both reversed this time. This is because we said to sort by surname, which it does, but there are no guarantees about what order rows appear in where the surname is the same.
+
+So, if we want to make it more *deterministic* (opposite of arbitrary), we can make it sort by surname *first* and first name *second*:
+
+```sql
+SELECT reservations.check_in_date, customers.first_name, customers.surname
+FROM reservations JOIN customers ON reservations.customer_id = customers.id
+WHERE reservations.check_in_date = '2018/08/19' ORDER BY customers.surname DESC, customers.first_name ASC;
+```
+
+```
+Check In Date  First Name  Surname
+------------------------------------
+2018/08/19     Donald      Trump
+2018/08/19     Melania     Trump
+2018/08/19     Colm        Hackerman
+2018/08/19     Bill        Clinton
+2018/08/19     Hillary     Clinton
+```
+
+In this case, since we're ordering by first name ascending, Donald always comes before Melania (D comes before M in the alphabet) and Bill comes before Hillary (because B comes before H in the alphabet).
+
+
+### LESSON 4: LIMIT YOUR QUERIES
+
+Now, the database you're working with right now is essentially just a toy. However,
+when you work with a real database you're often going to have a number of problems
+
+1) SELECT * FROM table is going to return thousands of rows. This take ages
+to load and display and if you just want to see a representative sample it's overkill.
+
+2) You want to return the top 10 of something.
+
+3) You want to show results 1-10 on page 1, results 2-20 on page 2, etc.
+
+SQL has a keyword called "LIMIT" which you can put at the end of a query to cut down
+on the number of returned rows:
+
+```sql
+SELECT * FROM customers ORDER BY surname ASC LIMIT 2;
+```
+
+##### EXERCISE 4.a
+
+Select two rooms only.
+
+
+##### Exercise 4.b: OPTIONAL STRETCH GOAL
+
+Select the latest 5 reservations on the database.
+
+
+##### Exercise 4.c: OPTIONAL STRETCH GOAL
+
+Select the reservations, primarily selecting the most recent ones, and secondarily selecting the longest ones.
+
+
+### LESSON 5: DISTINCT
+
+Remember the JOIN query from above? We're going to do another similar one.
+
+```sql
+SELECT customers.first_name, customers.surname
+FROM reservations JOIN customers ON reservations.customer_id = customers.id
+WHERE reservations.check_in_date > '2017/12/31' ORDER BY customers.surname ASC;
+```
+
+QUESTION FOR CLASS : What does this do?
+
+ANS : Get a list of all customers who have a reservation that begins this year
+
+Now, this is going to work with one exception. The list in my database
+is going to look a bit like this:
+
+```
+First Name  Surname
+---------------------
+Hillary     Clinton
+Colm        Hackerman
+Colm        Hackerman
+Colm        Hackerman
+Donald      Trump
+```
+
+QUESTION FOR CLASS : Why?
+
+ANS : Because Mr Hackerman loves this hotel more than Hillary and Donald and has arranged to stay there a few times.
+
+Of course, we only want to know *IF* Hackerman has stayed there once, not that he's their most popular guest.
+
+```sql
+SELECT DISTINCT customers.first_name, customers.surname
+FROM reservations JOIN customers ON reservations.customer_id = customers.id
+WHERE reservations.check_in_date > '2017/12/31' ORDER BY customers.surname ASC;
+```
+
+Will output:
+
+```
+First Name  Surname
+---------------------
+Hillary     Clinton
+Colm        Hackerman
+Donald      Trump
+```
+
+Problem solved.
+
+
+##### EXERCISE 5.a
+
+Get the list of check in dates in the summer 2017.
+
+
+##### EXERCISE 5.b: OPTIONAL STRETCH GOAL
+
+Get the list of customers that made a reservation in the last year, including their details.
+
+
+### LESSON 6: SUM, AVERAGE AND COUNT
+
+Let us imagine that we want to know how many reservations we have on our database. Similarly to the previous lesson, we could get all the records and count them ourselves, but that sounds boring and unrealistic in real life cases, where databases can have several millions of entries. So, for that purpose we have aggregation functions:
+
+```
+COUNT, SUM or AVG
+```
+
+The usages of each are pretty obvious.
+So, this means that we can count, sum and calculate the average of a set of values.
+
+Let's check an example for `COUNT`:
+
+`SELECT COUNT(*) FROM customers;`
+
+This will return the number of customers on a database.
+
+We call these aggregation functions, and we use them to modify the results while aggregating the table results - we had a list of rows for customers, now we have the count of customers: we aggregated the rows by counting them.
+
+
+##### EXERCISE 6.a
+
+COUNT the number of reservations for a given customer ID.
+
+
+##### EXERCISE 6.b: OPTIONAL STRETCH GOAL
+
+Calculate the average paid amount across all invoices.
+
+
+
+### LESSON 7: GROUPING
+Let us say that we need to get the list of different surnames from our list of customers, and how many times each surname shows up on our database.
+
+Here the idea is that we could group the columns by the surname and get a list of each different surname, and then we can apply an aggregation function to them.
+
+For this we can use `GROUP BY` as follows:
+
+```sql
+SELECT <column_to_aggregate_1>, <column_to_aggregate_2> FROM <table> GROUP BY <column_to_aggregate_1>, <column_to_aggregate_2>;
+```
+
+For instance, if we have the following entries on the customers:
+
+| id | title | first_name | surname | email |
+| --- | --- | --- | --- | --- |
+|1|Doc.|Tom|Jones|tom.jones@domain.com|
+|2|Mr.|Jorge|Silva|jorge-silva@domain.com|
+|3|Mr.|Jorge|Silva|jorge2-silva@domain.com|
+|16|Doc.|Pedro|Silva|pedro.silva@domain.com|
+|17|Doc.|Colm|O'Conner|colm.oconner@domain.com|
+|18|Doc.|James|Lennon|john.lennon@domain.com|
+|19|Sir.|John|O'Conner|John.oconner@domain.com|
+
+If we group by surname we have 4 different surnames: `O'Conner`, `Silva`, `Jones`, `Lennon`, but for `Silva` and `O'Conner`, we have more than one entry, so we need to aggregate them. In this case, we want to count the occurrences so we can simply do:
+
+```sql
+SELECT surname, COUNT(*) FROM customers GROUP BY surname;
+```
+
+This should give this output:
+
+```
+Jones|1
+Silva|3
+O'Conner|2
+Lennon|1
+```
+
+
+##### EXERCISE 7.a
+
+COUNT the occurrences of the DIFFERENT titles on the database.
+
+
+##### EXERCISE 7.b: OPTIONAL STRETCH GOAL
+
+COUNT the occurrences of a combination of first-name and surname to get a list of customers with the same name.
+
+
+
+### LESSON 8: HAVING YOUR TABLE AND EATING IT
+
+Suppose that we want to filter the result of what we got on the previous example - count of each customer's surname - to select only the surnames for which there are 3 or more customers?
+
+To accomplish that we can use `HAVING` as follows:
+```sql
+SELECT surname, COUNT(*) AS count FROM customers GROUP BY surname HAVING count >= 3;
+```
+
+Note that `WHERE` would not work, because it enables us to filter data that will grouped, and we want to filter the result of that grouping. We want to filter by the count of customers.
+
+
+##### EXERCISE 8.a
+
+Get the list of customers that have 5 or more reservations on our hotel.
+
+
+# HOMEWORK
+
+##### HOMEWORK 1
+
+**User Story:** As a staff member, I want to see reservations and their respective invoices
+
+Create an endpoint to get from `/reservations-and-invoices/` the list of reservations and respective invoices.
+
+
+##### HOMEWORK 2
+
+Calculate the total amount paid on invoices for the summer of 2017.
+
+
+##### HOMEWORK 3
+
+**User Story:** As a staff member, I want to check the number reservations for each customer, including their own details, so that we check who are our best customers.
+
+Complete the endpoint to get from `/reservations-per-customer/` the number of reservations per customer, with details for the customer and the reservation.
+
+##### HOMEWORK 4
+
+Get the number of reservations for each room ID and include the details for the room details.
+
+##### HOMEWORK 5
+
+Adapt the previous query (8.c) to include the details for the type of room.
+
+
+##### HOMEWORK 6
+
+Get the list of rooms with sea view that were reserved more than 5 times.
+
+
+##### HOMEWORK 7
+
+Create an endpoint for each previous exercise that doesn't have an endpoint yet. You will have to think about what is the context of the query, what parameters you need to receive in the end-point and what makes sense to return as a result and in which format.
+
+
+##### HOMEWORK 8
+
+**User Story** As a staff member, I want to get the list of reservations within a time period, including the room and customer details.
+
+Create an endpoint to get from `/reservations/details-between/:from_day/:to_day` the list of reservations between a specified time period. this should include the customer and room details.
+
+
+##### HOMEWORK 9
+
+**User Story** As a staff member, I want to get the number of reservations per customer.
+
+Create an endpoint to get from `/reservations-per-customer/` the number of reservations each client has.
+
+
+###### HOMEWORK 10
+
+**User Story** As a staff member I want to analyse the rentability of each room, getting the total amount earned for each room, the average per reservations, and the number of reservations it has had in the past.
+
+Create an endpoint to get from `/stats-price-room/` the list of rooms, together with the amount the hotel has earned with each, the average value earned per stay, and the number of complete stays it has had in the past.
+
+
+##### HOMEWORK 11
+
+**User Story** As a client or staff member, I want to check the availability of a room within a given date range.
+
+Create an endpoint to get from `/rooms/available-in/:from_day/:to_day` the list of available rooms.

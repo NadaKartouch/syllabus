@@ -14,9 +14,12 @@
 - [React Components](#react-components)
 - [Embedding JS into JSX](#embedding-js-into-jsx)
 - [Importing/Exporting Components](#importingexporting-components)
+<<<<<<< HEAD
 - [Making an Argument for Props](#making-an-argument-for-props)
 - [What Are Props?](#what-are-props)
 - [Prop Types](#prop-types)
+=======
+>>>>>>> parent of b6129dc... modifying syllabus
 
 ## What is React?
 
@@ -326,6 +329,7 @@ The convention is to name component files the exactly same as the component (inc
 > Using the `my-hotel` app, edit `src/App.js` to extract the `Logo`, `BookingsMessage` and `SpecialDeals` components to new files `src/Logo.js` and `src/SpecialDeals.js`
 > Hint: you will need to import React
 
+<<<<<<< HEAD
 ## Making an Argument for Props
 
 What's the problem with our `HelloMentor` component above? Hint: imagine what our boss might ask for with this small application. What could our boss ask for which would mean we would have to make changes to the code?
@@ -429,6 +433,8 @@ import PropTypes from 'prop-types'
 
 The official documentation has more information on how to use PropTypes [here](https://reactjs.org/docs/typechecking-with-proptypes.html).
 
+=======
+>>>>>>> parent of b6129dc... modifying syllabus
 #### Credits
 
 Inspiration & examples for this module were taken from [Kent C. Dodd's](https://twitter.com/kentcdodds) [Beginner's Guide to ReactJS](https://egghead.io/courses/the-beginner-s-guide-to-reactjs) course on Egghead.io. It's a free course, so check it out :)
